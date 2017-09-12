@@ -1,0 +1,11 @@
+{
+  "license": "MIT",
+  "name": "elm-befunge",
+  "version": "1.0.0",
+  "scripts": {
+    "start": "elm-reactor --address=0.0.0.0"
+  },
+  "dependencies": {
+    "elm": "^0.18.0"
+  }
+}
