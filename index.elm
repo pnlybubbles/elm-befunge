@@ -354,7 +354,8 @@ commands cell cursor b = case cell of
 view : Model -> Html Msg
 view model =
   div [ bodyStyle ]
-    [ div [] [ textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] [] ]
+    [ h1 [ titleStyle ] [ text "Befunge" ]
+    , div [] [ textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] [] ]
     , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
     , input [ buttonStyle, type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
     , input [ buttonStyle, type_ "button", onClick Reset, value "reset" ] []
@@ -379,7 +380,7 @@ colorize source (cx, cy) =
     wrap (x, y) cell =
       span (
         if x == cx && y == cy
-          then [ style [("background-color", "#faa")] ]
+          then [ cursorStyle ]
           else []
       ) [ text <| String.fromChar <| fixCharWidth cell ]
     children = source 
@@ -388,6 +389,17 @@ colorize source (cx, cy) =
       |> Array.toList
   in
     div [] children
+
+cursorStyle : Attribute Msg
+cursorStyle = style [
+    ("background-color", "#000"),
+    ("color", "#fff")
+  ]
+
+titleStyle : Attribute Msg
+titleStyle = style [
+    ("font-family", "'Arial Black', 'Arial Bold', Gadget, sans-serif")
+  ]
 
 bodyStyle : Attribute Msg
 bodyStyle = style [
@@ -402,7 +414,7 @@ buttonStyle = style [
 textStyle : Attribute Msg
 textStyle = style [
     ("font-family", "Monaco"),
-    ("border", "solid 1px #666"),
+    ("border", "solid 2px #000"),
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
     ("margin", "0 15px 15px 0"),
