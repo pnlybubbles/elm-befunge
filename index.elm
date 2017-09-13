@@ -64,7 +64,7 @@ emptyArray2d : Array2d a
 emptyArray2d = Array.initialize 1 (always Array.empty)
 
 model : Model
-model = Model "" "500" 0 (Befunge emptyArray2d (0, 0) Right False None [] "")
+model = Model "" "500" 0 (Befunge emptyArray2d (0, 0) Right False End [] "")
 
 type Msg =
   Input String
@@ -93,14 +93,21 @@ update msg model =
     Toggle ->
       let
         b = model.befunge
-        befunge = { b |
-          cursor = (-1, 0),
-          direction = Right,
-          stack = [],
-          output = "",
-          running = not b.running,
-          source = stringToArray model.input 
-        }
+        befunge = case b.mode of
+          End -> 
+            { b |
+              cursor = (-1, 0),
+              direction = Right,
+              stack = [],
+              output = "",
+              running = not b.running,
+              source = stringToArray model.input,
+              mode = None
+            }
+          _ ->
+            { b |
+              running = not b.running
+            }
       in
         ({ model | befunge = befunge }, Cmd.none)
 
@@ -325,8 +332,8 @@ calc f s =
 view : Model -> Html Msg
 view model =
   div [ bodyStyle ]
-    [ div [] [ textarea [ onInput Input, value model.input, rows 18, cols 100 ] [] ]
-    , input [ type_ "text", onInput Interval, value model.interval  ] []
+    [ div [] [ textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] [] ]
+    , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
     , input [ type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
     , div [] [ div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ] ]
     , div [] [ div [ textStyle ] [ text (show model.befunge.stack) ] ]
@@ -356,7 +363,7 @@ textStyle = style [
     ("border", "solid 1px #666"),
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
-    ("margin", "10px 0 0 0"),
+    ("margin", "0 15px 15px 0"),
     ("box-sizing", "border-box")
   ]
 
