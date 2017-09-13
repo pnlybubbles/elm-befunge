@@ -79,12 +79,7 @@ update msg model =
       let
         b = model.befunge
         befunge = { b |
-          source = input
-            |> String.split "\n"
-            |> List.map String.toList
-            |> List.map Array.fromList
-            |> Array.fromList
-            |> Array.map (Array.map fixSpace)
+          source = stringToArray input
         }
       in
         ({ model | 
@@ -103,7 +98,8 @@ update msg model =
           direction = Right,
           stack = [],
           output = "",
-          running = not b.running
+          running = not b.running,
+          source = stringToArray model.input 
         }
       in
         ({ model | befunge = befunge }, Cmd.none)
@@ -117,6 +113,13 @@ update msg model =
         }, Cmd.none)
       else
         (model, Cmd.none)
+
+stringToArray : String -> Array2d Char
+stringToArray source = source
+  |> String.split "\n"
+  |> List.map String.toList
+  |> List.map Array.fromList
+  |> Array.fromList
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
@@ -149,6 +152,11 @@ get2d : Array2d a -> (Int, Int) -> Maybe a
 get2d a (x, y) = a
   |> Array.get y
   |> Maybe.andThen (Array.get x)
+
+set2d : (Int, Int) -> a -> Array2d a -> Array2d a
+set2d (x, y) v a = Array.set y (Array.set x v
+  <| Maybe.withDefault Array.empty 
+  <| Array.get y a) a
 
 indexedMap2d : ((Int, Int) -> a -> b) -> Array2d a -> Array2d b
 indexedMap2d f a = a
@@ -292,7 +300,17 @@ commands cell cursor b = case cell of
         |> Maybe.withDefault 0
     in
       { b |
-        stack = push b.stack c
+        stack = push s2 c
+      }
+  'p' ->
+    let
+      (s1, y) = pop b.stack
+      (s2, x) = pop s1
+      (s3, v) = pop s2
+    in
+      { b |
+        stack = s3,
+        source = set2d (x, y) (fromCode v) b.source
       }
   _ -> b
 
@@ -306,19 +324,31 @@ calc f s =
 
 view : Model -> Html Msg
 view model =
-  div []
+  div [ bodyStyle ]
     [ div [] [ textarea [ onInput Input, value model.input, rows 18, cols 100 ] [] ]
     , input [ type_ "text", onInput Interval, value model.interval  ] []
     , input [ type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
     , div [] [ div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ] ]
     , div [] [ div [ textStyle ] [ text (show model.befunge.stack) ] ]
     , div [] [ div [ textStyle ] [ text model.befunge.output ] ]
-    , div [] [ text (if model.befunge.running then "Running" else "Stop") ]
     , div [] [ text (toString model.time) ]
     ]
 
-fixSpace : Char -> Char
-fixSpace x = if x == ' ' then fromCode 160 else x
+fixCharWidth : Char -> Char
+fixCharWidth x =
+  let
+    ac = toCode x 
+  in
+    if 33 <= ac && ac <= 126
+      then x
+      else fromCode 160
+
+      
+
+bodyStyle : Attribute Msg
+bodyStyle = style [
+    ("margin", "30px")
+  ]
 
 textStyle : Attribute Msg
 textStyle = style [
@@ -326,7 +356,7 @@ textStyle = style [
     ("border", "solid 1px #666"),
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
-    ("margin", "0 0 10px 10px"),
+    ("margin", "10px 0 0 0"),
     ("box-sizing", "border-box")
   ]
 
@@ -338,7 +368,7 @@ colorize source (cx, cy) =
         if x == cx && y == cy
           then [ style [("background-color", "#faa")] ]
           else []
-      ) [ text (String.fromChar cell) ]
+      ) [ text <| String.fromChar <| fixCharWidth cell ]
     children = source 
       |> indexedMap2d wrap
       |> Array.map (\child -> div [] (Array.toList child))
