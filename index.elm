@@ -355,14 +355,25 @@ view : Model -> Html Msg
 view model =
   div [ bodyStyle ]
     [ h1 [ titleStyle ] [ text "Befunge" ]
-    , div [] [ textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] [] ]
+    , div [] [
+        textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] []
+      ]
     , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
     , input [ buttonStyle, type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
     , input [ buttonStyle, type_ "button", onClick Reset, value "reset" ] []
-    , div [] [ div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ] ]
-    , div [] [ div [ textStyle ] [ text (show model.befunge.stack) ] ]
-    , div [] [ div [ textStyle ] [ text model.befunge.output ] ]
+    , div [] [
+        div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ]
+      ]
+    , div [] [
+        div [ textStyle ] [ text (show model.befunge.stack) ]
+      ]
+    , div [] [
+        div [ textStyle ] [ text model.befunge.output ]
+      ]
     , div [] [ text (toString model.time) ]
+    , div [] [
+        a [ footerStyle, href "https://github.com/pnlybubbles/elm-befunge", target "_blank" ] [ text "source" ]
+      ]
     ]
 
 fixCharWidth : Char -> Char
@@ -403,7 +414,8 @@ titleStyle = style [
 
 bodyStyle : Attribute Msg
 bodyStyle = style [
-    ("margin", "30px")
+    ("margin", "30px"),
+    ("font-family", "Avenir, sans-serif")
   ]
 
 buttonStyle : Attribute msg
@@ -413,7 +425,7 @@ buttonStyle = style [
 
 textStyle : Attribute Msg
 textStyle = style [
-    ("font-family", "Monaco"),
+    ("font-family", "Monaco, Consolas, 'Courier New', Courier, monospace"),
     ("border", "solid 2px #000"),
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
@@ -421,3 +433,8 @@ textStyle = style [
     ("box-sizing", "border-box")
   ]
 
+footerStyle : Attribute Msg
+footerStyle = style [
+    ("color", "#999"),
+    ("font-size", "12px")
+  ]
