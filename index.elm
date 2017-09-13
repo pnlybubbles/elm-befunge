@@ -3,6 +3,7 @@ import Html.Attributes exposing (..)
 import Html.Events exposing (onInput, onClick)
 import Time exposing (Time, millisecond)
 import Array exposing (Array)
+import Char exposing (toCode, fromCode)
 
 main : Program Never Model Msg
 main =
@@ -19,7 +20,6 @@ init = (model, Cmd.none)
 type alias Model =
   { input: String
   , interval: String
-  , running: Bool
   , time: Int
   , befunge: Befunge
   }
@@ -28,27 +28,28 @@ type alias Befunge =
   { source: Array2d Char
   , cursor: (Int, Int)
   , direction: Direction
+  , running: Bool
   , mode: Mode
   , stack: Stack
   , output: String
   }
 
 type alias Stack = List Int
-type Mode = StringMode | None
+type Mode = StringMode | End | None
 type Direction = Up | Down | Left | Right
 type alias Array2d a = Array (Array a)
 
 pop : Stack -> (Stack, Int)
 pop s =
   let
-      newStack = s
-        |> List.tail
-        |> Maybe.withDefault []
-      value = s
-        |> List.head
-        |> Maybe.withDefault 0
+    newStack = s
+      |> List.tail
+      |> Maybe.withDefault []
+    value = s
+      |> List.head
+      |> Maybe.withDefault 0
   in
-     (newStack, value) 
+    (newStack, value) 
 
 push : Stack -> Int -> Stack
 push s v = v :: s
@@ -63,7 +64,7 @@ emptyArray2d : Array2d a
 emptyArray2d = Array.initialize 1 (always Array.empty)
 
 model : Model
-model = Model "" "500" False 0 (Befunge emptyArray2d (0, 0) Right None [] "")
+model = Model "" "500" 0 (Befunge emptyArray2d (0, 0) Right False None [] "")
 
 type Msg =
   Input String
@@ -94,10 +95,17 @@ update msg model =
       ({ model | interval = interval }, Cmd.none)
 
     Toggle ->
-      ({ model | running = not model.running }, Cmd.none)
+      let
+        b = model.befunge
+        befunge = { b |
+          cursor = (-1, 0),
+          running = not b.running
+        }
+      in
+        ({ model | befunge = befunge }, Cmd.none)
 
     Tick _ ->
-      if model.running
+      if model.befunge.running
       then
         ({ model |
           time = model.time + 1,
@@ -146,14 +154,13 @@ walkNext : Array2d a -> Direction -> (Int, Int) -> (Int, Int)
 walkNext a direction (x, y) =
   let
     cursorCandidate = case direction of
-      Left  -> (x + 1, y)
-      Right -> (x - 1, y)
+      Left  -> (x - 1, y)
+      Right -> (x + 1, y)
       Up    -> (x, y - 1)
       Down  -> (x, y + 1)
   in
     cyclicIndex2d a cursorCandidate
       |> Maybe.withDefault (0, 0)
-
 
 process : Befunge -> Befunge
 process b =
@@ -162,51 +169,136 @@ process b =
     cell = get2d b.source cursor
       |> Maybe.withDefault ' '
   in
-    case cell of
-      '<' ->
+    if b.mode == StringMode && cell /= '"'
+      then
         { b |
-          direction = Left,
+          stack = push b.stack (toCode cell),
           cursor = cursor
         }
-      '>' ->
-        { b |
-          direction = Right,
-          cursor = cursor
-        }
-      '^' ->
-        { b |
-          direction = Up,
-          cursor = cursor
-        }
-      'v' ->
-        { b |
-          direction = Down,
-          cursor = cursor
-        }
-      ' ' ->
-        { b |
-          cursor = cursor
-        }
-      '_' ->
-        let
-          (s, v) = pop b.stack
-        in
-          { b |
-            stack = s,
-            direction = if v == 0 then Right else Left
-          }
-      '|' ->
-        let
-          (s, v) = pop b.stack
-        in
-          { b |
-            stack = s,
-            direction = if v == 0 then Right else Left
-          }
-      _ ->
-        { b |
-          cursor = cursor
-        }
+      else
+        commands cell cursor { b | cursor = cursor }
+
+commands : Char -> (Int, Int) -> Befunge -> Befunge
+commands cell cursor b = case cell of
+  '<' -> { b | direction = Left }
+  '>' -> { b | direction = Right }
+  '^' -> { b | direction = Up }
+  'v' -> { b | direction = Down }
+  ' ' -> b
+  '_' ->
+    let
+      (s, v) = pop b.stack
+    in
+      { b |
+        stack = s,
+        direction = if v == 0 then Right else Left
+      }
+  '|' ->
+    let
+      (s, v) = pop b.stack
+    in
+      { b |
+        stack = s,
+        direction = if v == 0 then Right else Left
+      }
+  -- '?' ->
+  -- ' ' ->
+  '#' -> { b | cursor = walkNext b.source b.direction cursor }
+  '@' ->
+    { b |
+      running = False,
+      mode = End
+    }
+  '0' -> { b | stack = push b.stack 0 }
+  '1' -> { b | stack = push b.stack 1 }
+  '2' -> { b | stack = push b.stack 2 }
+  '3' -> { b | stack = push b.stack 3 }
+  '4' -> { b | stack = push b.stack 4 }
+  '5' -> { b | stack = push b.stack 5 }
+  '6' -> { b | stack = push b.stack 6 }
+  '7' -> { b | stack = push b.stack 7 }
+  '8' -> { b | stack = push b.stack 8 }
+  '9' -> { b | stack = push b.stack 9 }
+  '"' ->
+    { b |
+      mode = if b.mode == StringMode then None else StringMode
+    }
+  '.' ->
+    let
+      (s, v) = pop b.stack
+    in
+      { b |
+        stack = s,
+        output = b.output ++ (toString v)
+      }
+  ',' ->
+    let
+      (s, v) = pop b.stack
+    in
+      { b |
+        stack = s,
+        output = b.output ++ (v
+          |> fromCode
+          |> String.fromChar
+        )
+      }
+  '+' -> { b | stack = calc (+) b.stack }
+  '-' -> { b | stack = calc (-) b.stack }
+  '*' -> { b | stack = calc (*) b.stack }
+  '/' -> { b | stack = calc (//) b.stack }
+  '%' -> { b | stack = calc (%) b.stack }
+  '`' -> { b | stack = calc (\x y -> if x > y then 1 else 0) b.stack }
+  '!' ->
+    let
+      (s, v) = pop b.stack
+    in
+      { b |
+        stack = push s (if v == 0 then 1 else 0)
+      } 
+  ':' ->
+    let
+      (s1, v) = pop b.stack
+      s2 = push s1 v
+    in
+      { b |
+        stack = push s2 v
+      }
+  '\\' ->
+    let
+       (s1, y) = pop b.stack
+       (s2, x) = pop s1
+       s3 = push s2 y
+    in
+      { b |
+        stack = push s3 x 
+      }
+  '$' ->
+    let
+      (s, _) = pop b.stack
+    in
+      { b |
+        stack = s
+      }
+  'g' ->
+    let
+      (s1, y) = pop b.stack
+      (s2, x) = pop s1
+      c = get2d b.source (x, y)
+        |> Maybe.map toCode
+        |> Maybe.withDefault 0
+    in
+      { b |
+        stack = push b.stack c
+      }
+  _ -> b
+
+calc : (Int -> Int -> Int) -> Stack -> Stack
+calc f s =
+  let
+    (s1, y) = pop s
+    (s2, x) = pop s1
+  in
+    push s2 (f x y)
 
 view : Model -> Html Msg
 view model =
@@ -214,11 +306,11 @@ view model =
     [ textarea [ onInput Input, value model.input ] []
     , input [ type_ "text", onInput Interval, value model.interval  ] []
     , input [ type_ "button", onClick Toggle ] []
-    , div [] [ text model.input ]
     , div [] [ colorize model.befunge.source model.befunge.cursor ]
     , div [] [ text (show model.befunge.stack) ]
+    , div [] [ text model.befunge.output ]
     , div [] [ text model.interval ]
-    , div [] [ text (toString model.running) ]
+    , div [] [ text (toString model.befunge.running) ]
     , div [] [ text (toString model.time) ]
     ]
 
