@@ -3,7 +3,10 @@
   "name": "elm-befunge",
   "version": "1.0.0",
   "scripts": {
-    "start": "elm-reactor --address=0.0.0.0"
+    "start": "elm-reactor --address=0.0.0.0",
+    "build": "elm-make index.elm --output public/index.html",
+    "clean": "rm -rf public/*",
+    "test": "echo 'All good!'"
   },
   "dependencies": {
     "elm": "^0.18.0"
