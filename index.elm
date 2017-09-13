@@ -84,6 +84,7 @@ update msg model =
             |> List.map String.toList
             |> List.map Array.fromList
             |> Array.fromList
+            |> Array.map (Array.map fixSpace)
         }
       in
         ({ model | 
@@ -99,6 +100,9 @@ update msg model =
         b = model.befunge
         befunge = { b |
           cursor = (-1, 0),
+          direction = Right,
+          stack = [],
+          output = "",
           running = not b.running
         }
       in
@@ -303,16 +307,28 @@ calc f s =
 view : Model -> Html Msg
 view model =
   div []
-    [ textarea [ onInput Input, value model.input ] []
+    [ div [] [ textarea [ onInput Input, value model.input, rows 18, cols 100 ] [] ]
     , input [ type_ "text", onInput Interval, value model.interval  ] []
-    , input [ type_ "button", onClick Toggle ] []
-    , div [] [ colorize model.befunge.source model.befunge.cursor ]
-    , div [] [ text (show model.befunge.stack) ]
-    , div [] [ text model.befunge.output ]
-    , div [] [ text model.interval ]
-    , div [] [ text (toString model.befunge.running) ]
+    , input [ type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
+    , div [] [ div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ] ]
+    , div [] [ div [ textStyle ] [ text (show model.befunge.stack) ] ]
+    , div [] [ div [ textStyle ] [ text model.befunge.output ] ]
+    , div [] [ text (if model.befunge.running then "Running" else "Stop") ]
     , div [] [ text (toString model.time) ]
     ]
+
+fixSpace : Char -> Char
+fixSpace x = if x == ' ' then fromCode 160 else x
+
+textStyle : Attribute Msg
+textStyle = style [
+    ("font-family", "Monaco"),
+    ("border", "solid 1px #666"),
+    ("padding", "11px 12px 10px"),
+    ("display", "inline-block"),
+    ("margin", "0 0 10px 10px"),
+    ("box-sizing", "border-box")
+  ]
 
 colorize : Array2d Char -> (Int, Int) -> Html Msg
 colorize source (cx, cy) =
