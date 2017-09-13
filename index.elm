@@ -25,17 +25,39 @@ type alias Model =
   }
 
 type alias Befunge =
-  { source: Array (Array Char)
+  { source: Array2d Char
   , cursor: (Int, Int)
   , direction: Direction
-  , state: State
-  , stack: List Int
+  , mode: Mode
+  , stack: Stack
   , output: String
   }
 
-type State = AsciiLiteral | None
+type alias Stack = List Int
+type Mode = StringMode | None
 type Direction = Up | Down | Left | Right
 type alias Array2d a = Array (Array a)
+
+pop : Stack -> (Stack, Int)
+pop s =
+  let
+      newStack = s
+        |> List.tail
+        |> Maybe.withDefault []
+      value = s
+        |> List.head
+        |> Maybe.withDefault 0
+  in
+     (newStack, value) 
+
+push : Stack -> Int -> Stack
+push s v = v :: s
+
+show : Stack -> String
+show s = s
+  |> List.reverse
+  |> List.map toString
+  |> String.join " "
 
 emptyArray2d : Array2d a
 emptyArray2d = Array.initialize 1 (always Array.empty)
@@ -116,6 +138,10 @@ get2d a (x, y) = a
   |> Array.get y
   |> Maybe.andThen (Array.get x)
 
+indexedMap2d : ((Int, Int) -> a -> b) -> Array2d a -> Array2d b
+indexedMap2d f a = a
+  |> Array.indexedMap (\y -> Array.indexedMap (\x c -> f (x, y) c))
+
 walkNext : Array2d a -> Direction -> (Int, Int) -> (Int, Int)
 walkNext a direction (x, y) =
   let
@@ -161,6 +187,22 @@ process b =
         { b |
           cursor = cursor
         }
+      '_' ->
+        let
+          (s, v) = pop b.stack
+        in
+          { b |
+            stack = s,
+            direction = if v == 0 then Right else Left
+          }
+      '|' ->
+        let
+          (s, v) = pop b.stack
+        in
+          { b |
+            stack = s,
+            direction = if v == 0 then Right else Left
+          }
       _ ->
         { b |
           cursor = cursor
@@ -173,7 +215,25 @@ view model =
     , input [ type_ "text", onInput Interval, value model.interval  ] []
     , input [ type_ "button", onClick Toggle ] []
     , div [] [ text model.input ]
+    , div [] [ colorize model.befunge.source model.befunge.cursor ]
+    , div [] [ text (show model.befunge.stack) ]
     , div [] [ text model.interval ]
     , div [] [ text (toString model.running) ]
     , div [] [ text (toString model.time) ]
     ]
+
+colorize : Array2d Char -> (Int, Int) -> Html Msg
+colorize source (cx, cy) =
+  let
+    wrap (x, y) cell =
+      span (
+        if x == cx && y == cy
+          then [ style [("background-color", "#faa")] ]
+          else []
+      ) [ text (String.fromChar cell) ]
+    children = source 
+      |> indexedMap2d wrap
+      |> Array.map (\child -> div [] (Array.toList child))
+      |> Array.toList
+  in
+    div [] children
