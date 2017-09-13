@@ -70,6 +70,7 @@ type Msg =
   Input String
   | Interval String
   | Toggle
+  | Reset
   | Tick Time
 
 update : Msg -> Model -> (Model, Cmd Msg)
@@ -109,7 +110,28 @@ update msg model =
               running = not b.running
             }
       in
-        ({ model | befunge = befunge }, Cmd.none)
+        ({ model |
+          befunge = befunge,
+          time = if model.befunge.mode == End then 0 else model.time
+        }, Cmd.none)
+    
+    Reset ->
+      let
+        b = model.befunge
+        befunge = { b |
+          cursor = (0, 0),
+          direction = Right,
+          stack = [],
+          output = "",
+          running = False,
+          source = stringToArray model.input,
+          mode = End
+        }
+      in
+        ({ model |
+          befunge = befunge,
+          time = 0
+        }, Cmd.none)
 
     Tick _ ->
       if model.befunge.running
@@ -180,6 +202,14 @@ walkNext a direction (x, y) =
   in
     cyclicIndex2d a cursorCandidate
       |> Maybe.withDefault (0, 0)
+
+calc : (Int -> Int -> Int) -> Stack -> Stack
+calc f s =
+  let
+    (s1, y) = pop s
+    (s2, x) = pop s1
+  in
+    push s2 (f x y)
 
 process : Befunge -> Befunge
 process b =
@@ -321,20 +351,13 @@ commands cell cursor b = case cell of
       }
   _ -> b
 
-calc : (Int -> Int -> Int) -> Stack -> Stack
-calc f s =
-  let
-    (s1, y) = pop s
-    (s2, x) = pop s1
-  in
-    push s2 (f x y)
-
 view : Model -> Html Msg
 view model =
   div [ bodyStyle ]
     [ div [] [ textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] [] ]
     , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
-    , input [ type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
+    , input [ buttonStyle, type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
+    , input [ buttonStyle, type_ "button", onClick Reset, value "reset" ] []
     , div [] [ div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ] ]
     , div [] [ div [ textStyle ] [ text (show model.befunge.stack) ] ]
     , div [] [ div [ textStyle ] [ text model.befunge.output ] ]
@@ -349,23 +372,6 @@ fixCharWidth x =
     if 33 <= ac && ac <= 126
       then x
       else fromCode 160
-
-      
-
-bodyStyle : Attribute Msg
-bodyStyle = style [
-    ("margin", "30px")
-  ]
-
-textStyle : Attribute Msg
-textStyle = style [
-    ("font-family", "Monaco"),
-    ("border", "solid 1px #666"),
-    ("padding", "11px 12px 10px"),
-    ("display", "inline-block"),
-    ("margin", "0 15px 15px 0"),
-    ("box-sizing", "border-box")
-  ]
 
 colorize : Array2d Char -> (Int, Int) -> Html Msg
 colorize source (cx, cy) =
@@ -382,3 +388,24 @@ colorize source (cx, cy) =
       |> Array.toList
   in
     div [] children
+
+bodyStyle : Attribute Msg
+bodyStyle = style [
+    ("margin", "30px")
+  ]
+
+buttonStyle : Attribute msg
+buttonStyle = style [
+    ("margin-right", "10px")
+  ]
+
+textStyle : Attribute Msg
+textStyle = style [
+    ("font-family", "Monaco"),
+    ("border", "solid 1px #666"),
+    ("padding", "11px 12px 10px"),
+    ("display", "inline-block"),
+    ("margin", "0 15px 15px 0"),
+    ("box-sizing", "border-box")
+  ]
+
