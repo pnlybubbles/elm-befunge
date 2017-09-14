@@ -15,7 +15,7 @@ main =
     }
 
 init : (Model, Cmd Msg)
-init = (model, Cmd.none)
+init = (initModel, Cmd.none)
 
 type alias Model =
   { input: String
@@ -63,13 +63,24 @@ show s = s
 emptyArray2d : Array2d a
 emptyArray2d = Array.initialize 1 (always Array.empty)
 
-model : Model
-model = Model "" "500" 0 (Befunge emptyArray2d (0, 0) Right False End [] "")
+defaultInterval : Float
+defaultInterval = 200
+
+defaultInput : String
+defaultInput = """2>:1->1-00p::00g:       v
+         v%-g00::_v#!`\\-_$$.v
+     ^g00_                  v
+ ^+1                        <
+                  >       :.^"""
+
+initModel : Model
+initModel = Model defaultInput (toString defaultInterval) 0 (Befunge (stringToArray defaultInput) (0, 0) Right False End [] "")
 
 type Msg =
   Input String
   | Interval String
   | Toggle
+  | Step
   | Reset
   | Tick Time
 
@@ -95,16 +106,7 @@ update msg model =
       let
         b = model.befunge
         befunge = case b.mode of
-          End -> 
-            { b |
-              cursor = (-1, 0),
-              direction = Right,
-              stack = [],
-              output = "",
-              running = not b.running,
-              source = stringToArray model.input,
-              mode = None
-            }
+          End -> initBefunge model
           _ ->
             { b |
               running = not b.running
@@ -136,12 +138,50 @@ update msg model =
     Tick _ ->
       if model.befunge.running
       then
-        ({ model |
-          time = model.time + 1,
-          befunge = process model.befunge
-        }, Cmd.none)
+        let
+          frame = model.interval
+            |> String.toFloat
+            |> Result.withDefault defaultInterval
+            |> clamp 0.0001 1.0
+            |> (/) 1.0
+            |> round
+          befunge = List.range 1 frame
+            |> List.foldr (always process) model.befunge 
+        in
+          ({ model |
+            time = model.time + frame,
+            befunge = befunge
+          }, Cmd.none)
       else
         (model, Cmd.none)
+    
+    Step ->
+      let
+        befunge = case model.befunge.mode of
+          End -> initBefunge model
+          _ -> model.befunge
+      in
+        ({ model |
+          time = model.time + 1,
+          befunge = process { befunge |
+            running = False
+          }
+        }, Cmd.none)
+
+initBefunge : Model -> Befunge
+initBefunge model = 
+  let
+    b = model.befunge
+  in
+    { b |
+      cursor = (-1, 0),
+      direction = Right,
+      stack = [],
+      output = "",
+      running = True,
+      source = stringToArray model.input,
+      mode = None
+    }
 
 stringToArray : String -> Array2d Char
 stringToArray source = source
@@ -154,9 +194,9 @@ subscriptions : Model -> Sub Msg
 subscriptions model = 
   let
     ms = model.interval
-      |> String.toInt
-      |> Result.withDefault 500
-      |> toFloat
+      |> String.toFloat
+      |> Result.withDefault defaultInterval
+      |> clamp 0 5000
   in
     Time.every (millisecond * ms) Tick
 
@@ -278,7 +318,7 @@ commands cell cursor b = case cell of
     in
       { b |
         stack = s,
-        output = b.output ++ (toString v)
+        output = b.output ++ (toString v) ++ " "
       }
   ',' ->
     let
@@ -360,6 +400,7 @@ view model =
       ]
     , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
     , input [ buttonStyle, type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
+    , input [ buttonStyle, type_ "button", onClick Step, value "step" ] []
     , input [ buttonStyle, type_ "button", onClick Reset, value "reset" ] []
     , div [] [
         div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ]
@@ -420,7 +461,7 @@ bodyStyle = style [
 
 buttonStyle : Attribute msg
 buttonStyle = style [
-    ("margin-right", "10px")
+    ("margin-left", "15px")
   ]
 
 textStyle : Attribute Msg
@@ -429,7 +470,7 @@ textStyle = style [
     ("border", "solid 2px #000"),
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
-    ("margin", "0 15px 15px 0"),
+    ("margin", "0 0 15px 0"),
     ("box-sizing", "border-box")
   ]
 
