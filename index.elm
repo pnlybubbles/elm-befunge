@@ -266,13 +266,18 @@ process b =
     cell = get2d b.source cursor
       |> Maybe.withDefault ' '
   in
-    if b.mode == StringMode && cell /= '"'
-      then
-        { b |
-          stack = push b.stack (toCode cell),
-          cursor = cursor
-        }
-      else
+    case b.mode of
+      End -> b
+      StringMode ->
+        if cell /= '"'
+          then
+            { b |
+              stack = push b.stack (toCode cell),
+              cursor = cursor
+            }
+          else
+            commands cell cursor { b | cursor = cursor }
+      None ->
         commands cell cursor { b | cursor = cursor }
 
 commands : Char -> (Int, Int) -> Befunge -> Befunge
