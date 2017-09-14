@@ -417,7 +417,7 @@ view model =
         div [ textStyle ] [ text (show model.befunge.stack) ]
       ]
     , div [] [
-        div [ textStyle ] [ text model.befunge.output ]
+        pre [ textStyle ] [ text model.befunge.output ]
       ]
     , div [] [ text (toString model.time) ]
     , div [] [
