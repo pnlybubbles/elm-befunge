@@ -184,11 +184,19 @@ initBefunge model =
     }
 
 stringToArray : String -> Array2d Char
-stringToArray source = source
-  |> String.split "\n"
-  |> List.map String.toList
-  |> List.map Array.fromList
-  |> Array.fromList
+stringToArray source =
+  let
+    rowSource = String.split "\n" source
+    w = rowSource
+      |> List.map String.length
+      |> List.maximum
+      |> Maybe.withDefault 0
+  in
+    rowSource 
+      |> List.map (String.padRight w ' ')
+      |> List.map String.toList
+      |> List.map Array.fromList
+      |> Array.fromList
 
 subscriptions : Model -> Sub Msg
 subscriptions model = 
