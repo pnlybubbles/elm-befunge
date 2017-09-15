@@ -484,7 +484,8 @@ textStyle = style [
     ("padding", "11px 12px 10px"),
     ("display", "inline-block"),
     ("margin", "0 0 15px 0"),
-    ("box-sizing", "border-box")
+    ("box-sizing", "border-box"),
+    ("white-space", "pre-wrap")
   ]
 
 footerStyle : Attribute Msg
