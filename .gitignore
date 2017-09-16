@@ -2,3 +2,5 @@
 node_modules
 elm-stuff
 /public/*
+!/public/index.html
+!/public/main.css

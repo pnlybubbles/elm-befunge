@@ -4,11 +4,14 @@
   "version": "1.0.0",
   "scripts": {
     "start": "elm-reactor --address=0.0.0.0",
-    "build": "yes | elm-make index.elm --output public/index.html",
-    "clean": "rm -rf public/*",
+    "build": "yes | elm-make index.elm --output public/main.js",
+    "clean": "del ./public/* !./public/index.html !./public/main.css",
     "test": "echo 'All good!'"
   },
   "dependencies": {
     "elm": "^0.18.0"
+  },
+  "devDependencies": {
+    "del-cli": "^1.1.0"
   }
 }

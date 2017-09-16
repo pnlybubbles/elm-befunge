@@ -406,27 +406,27 @@ commands cell cursor b = case cell of
 
 view : Model -> Html Msg
 view model =
-  div [ bodyStyle ]
-    [ h1 [ titleStyle ] [ text "Befunge" ]
+  div [ class "main" ]
+    [ h1 [ class "title" ] [ text "Befunge" ]
     , div [] [
-        textarea [ textStyle, onInput Input, value model.input, rows 10, cols 80 ] []
+        textarea [ class "text", onInput Input, value model.input, rows 10, cols 80 ] []
       ]
-    , input [ textStyle, type_ "text", onInput Interval, value model.interval  ] []
-    , input [ buttonStyle, type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
-    , input [ buttonStyle, type_ "button", onClick Step, value "step" ] []
-    , input [ buttonStyle, type_ "button", onClick Reset, value "reset" ] []
+    , input [ class "text", type_ "text", onInput Interval, value model.interval  ] []
+    , input [ class "button", type_ "button", onClick Toggle, value (if model.befunge.running then "stop" else "run") ] []
+    , input [ class "button", type_ "button", onClick Step, value "step" ] []
+    , input [ class "button", type_ "button", onClick Reset, value "reset" ] []
     , div [] [
-        div [ textStyle ] [ colorize model.befunge.source model.befunge.cursor ]
-      ]
-    , div [] [
-        div [ textStyle ] [ text (show model.befunge.stack) ]
+        div [ class "text" ] [ colorize model.befunge.source model.befunge.cursor ]
       ]
     , div [] [
-        pre [ textStyle ] [ text model.befunge.output ]
+        div [ class "text" ] [ text (show model.befunge.stack) ]
+      ]
+    , div [] [
+        pre [ class "text" ] [ text model.befunge.output ]
       ]
     , div [] [ text (toString model.time) ]
     , div [] [
-        a [ footerStyle, href "https://github.com/pnlybubbles/elm-befunge", target "_blank" ] [ text "source" ]
+        a [ class "footer", href "https://github.com/pnlybubbles/elm-befunge", target "_blank" ] [ text "source" ]
       ]
     ]
 
@@ -445,7 +445,7 @@ colorize source (cx, cy) =
     wrap (x, y) cell =
       span (
         if x == cx && y == cy
-          then [ cursorStyle ]
+          then [ class "cursor" ]
           else []
       ) [ text <| String.fromChar <| fixCharWidth cell ]
     children = source 
@@ -454,42 +454,3 @@ colorize source (cx, cy) =
       |> Array.toList
   in
     div [] children
-
-cursorStyle : Attribute Msg
-cursorStyle = style [
-    ("background-color", "#000"),
-    ("color", "#fff")
-  ]
-
-titleStyle : Attribute Msg
-titleStyle = style [
-    ("font-family", "'Arial Black', 'Arial Bold', Gadget, sans-serif")
-  ]
-
-bodyStyle : Attribute Msg
-bodyStyle = style [
-    ("margin", "30px"),
-    ("font-family", "Avenir, sans-serif")
-  ]
-
-buttonStyle : Attribute msg
-buttonStyle = style [
-    ("margin-left", "15px")
-  ]
-
-textStyle : Attribute Msg
-textStyle = style [
-    ("font-family", "Monaco, Consolas, 'Courier New', Courier, monospace"),
-    ("border", "solid 2px #000"),
-    ("padding", "11px 12px 10px"),
-    ("display", "inline-block"),
-    ("margin", "0 0 15px 0"),
-    ("box-sizing", "border-box"),
-    ("white-space", "pre-wrap")
-  ]
-
-footerStyle : Attribute Msg
-footerStyle = style [
-    ("color", "#999"),
-    ("font-size", "12px")
-  ]
