@@ -301,7 +301,7 @@ commands cell cursor b = case cell of
     in
       { b |
         stack = s,
-        direction = if v == 0 then Right else Left
+        direction = if v == 0 then Down else Up
       }
   -- '?' ->
   -- ' ' ->
