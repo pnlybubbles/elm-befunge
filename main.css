@@ -1,0 +1,40 @@
+.main {
+  margin: 30px;
+  font-family: Avenir, sans-serif;
+}
+
+.cursor {
+  background-color: #000;
+  color: #fff;
+}
+
+.title {
+  font-family: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
+}
+
+.note {
+  margin-left: 1em;
+  font-size: 0.4em;
+  font-family: Avenir, sans-serif;
+  font-weight: normal;
+  color: #999;
+}
+
+.button {
+  margin-left: 15px;
+}
+
+.text {
+  font-family: Monaco, Consolas, 'Courier New', Courier, monospace;
+  border: solid 2px #000;
+  padding: 11px 12px 10px;
+  display: inline-block;
+  margin: 0 0 15px 0;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+}
+
+.footer {
+  color: #999;
+  font-size: 12px;
+}
