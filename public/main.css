@@ -12,6 +12,14 @@
   font-family: 'Arial Black', 'Arial Bold', Gadget, sans-serif;
 }
 
+.note {
+  margin-left: 1em;
+  font-size: 0.4em;
+  font-family: Avenir, sans-serif;
+  font-weight: normal;
+  color: #999;
+}
+
 .button {
   margin-left: 15px;
 }

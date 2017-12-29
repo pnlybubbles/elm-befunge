@@ -407,7 +407,10 @@ commands cell cursor b = case cell of
 view : Model -> Html Msg
 view model =
   div [ class "main" ]
-    [ h1 [ class "title" ] [ text "Befunge" ]
+    [ h1 [ class "title" ]
+      [ text "Befunge"
+        , span [ class "note" ] [ text "Elm" ]
+      ]
     , div [] [
         textarea [ class "text", onInput Input, value model.input, rows 10, cols 80 ] []
       ]
